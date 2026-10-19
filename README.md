@@ -4,7 +4,7 @@
 
 **Upload a PDF or text file and ask questions about it. Every answer comes from the document, cites its pages, and says "not found" instead of guessing.**
 
-FastAPI · Chroma · OpenAI embeddings · OpenAI or Claude for answers · about 500 lines of plain Python, no LangChain.
+FastAPI · Chroma · OpenAI embeddings and answers · about 500 lines of plain Python, no LangChain.
 
 **In short**
 
@@ -40,8 +40,6 @@ Upload `sample/acme_handbook.pdf`, a fictional six-page employee handbook, and a
 docker build -t rag-document-qa .
 docker run --rm -p 8000:8000 --env-file .env -v rag-data:/data rag-document-qa
 ```
-
-To answer with Claude instead of OpenAI, set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in `.env`. Embeddings always use OpenAI.
 
 ## API
 
@@ -131,7 +129,7 @@ curl http://localhost:8000/health
 ```
 
 ```json
-{"status":"ok","llm_provider":"openai"}
+{"status":"ok","model":"gpt-4.1-mini"}
 ```
 
 Upload errors return clear 4xx responses: `415` for a wrong file type, `400` for an empty or corrupt file, `413` for a file over `MAX_UPLOAD_MB`, and `422` for a PDF without a text layer (*"…It is probably a scanned image; OCR would be needed."*). Asking about an unknown `doc_id` returns `404`.
@@ -248,7 +246,7 @@ No answerable question was missed in the final run, but the evaluation did expos
 - **Plain libraries instead of LangChain or LlamaIndex.** The pipeline is roughly six function calls: extract, chunk, embed, store, search, prompt. Writing them directly keeps every step visible and debuggable, avoids framework version churn, and makes it obvious where to plug in changes such as a reranker, another vector store or another model. Each module has one job, and the two provider interfaces (`Embedder`, `AnswerModel`) are small `Protocol`s, which is also what lets the tests run without an API key.
 - **800-character chunks with 150 characters of overlap.** About 150–200 tokens: large enough to hold a complete policy rule with its context, small enough that retrieval stays precise and the prompt stays cheap. Chunks never cross page boundaries, so every source has exactly one page to cite.
 - **Cosine similarity with a tuned threshold.** `MIN_SCORE` was tuned with `run_eval.py --sweep` on the first 18 questions. The lowest top-1 score among the answerable questions is 0.359 (*"How quickly must I report a lost or stolen laptop?"*), so `MIN_SCORE` is 0.35, just below it. On the full 31-question set that still holds (every later answerable question scored at least 0.398), and it still stops 3 of the 10 unanswerable questions (top-1 scores 0.05–0.27) before any LLM call. The other seven (0.36–0.62) look close to the handbook's content and are left to layer 2. Any value from 0.27 to 0.35 gives the same split on this sample; the highest one is used so that new off-topic questions are more likely to be stopped for free. A threshold depends on the embedding model and the corpus, so re-run the sweep on your own documents.
-- **Cheap, fast default models** (`gpt-4.1-mini`, or `claude-haiku-5-5` with `LLM_PROVIDER=anthropic`). Grounded short answers don't need a frontier model. All model names are environment variables.
+- **Cheap, fast default models** (`text-embedding-3-small` and `gpt-4.1-mini`). Grounded short answers don't need a frontier model. Both model names are environment variables.
 - **Content-hash document IDs.** Re-uploading a file is idempotent and never re-embeds it.
 
 ## Why a threshold instead of a reranker?
@@ -284,7 +282,7 @@ app/
   config.py        settings from environment (pydantic-settings)
   ingest.py        text extraction + chunking
   store.py         Chroma wrapper
-  llm.py           embedding + answer providers (OpenAI / Anthropic)
+  llm.py           OpenAI embedding + answer providers
   rag.py           retrieve → threshold → prompt → answer
   static/index.html
 sample/            make_sample.py + the generated acme_handbook.pdf
@@ -301,6 +299,7 @@ scripts/           screenshots.py (Playwright) for the images above
 - **Multi-document questions.** Search is currently scoped to one document. Dropping the `doc_id` filter, or filtering on a set of IDs, enables corpus-wide Q&A.
 - **Auth and multi-tenancy.** There is no authentication. A real deployment needs API keys or OAuth, and per-tenant collections.
 - **Deployment.** For production: a managed vector database (or Chroma server), async background ingestion for large files, streaming answers, and request logging and metrics.
+- **Other LLM providers.** Other LLM providers (other hosted APIs, local models) can be added by implementing the small `AnswerModel` interface.
 
 ## License
 

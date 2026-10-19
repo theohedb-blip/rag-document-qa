@@ -72,7 +72,7 @@ def index() -> FileResponse:
 
 @app.get("/health")
 def health() -> dict[str, str]:
-    return {"status": "ok", "llm_provider": get_settings().llm_provider}
+    return {"status": "ok", "model": get_settings().openai_chat_model}
 
 
 @app.post("/documents", response_model=DocumentOut, status_code=201)

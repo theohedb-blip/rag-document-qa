@@ -167,8 +167,7 @@ def main() -> None:
             return
 
         settings = service.settings
-        model = settings.anthropic_model if settings.llm_provider == "anthropic" else settings.openai_chat_model
-        output = report(run(service, doc.doc_id, questions), settings.min_score, model)
+        output = report(run(service, doc.doc_id, questions), settings.min_score, settings.openai_chat_model)
         RESULTS.write_text(output + "\n")
         print(output)
         print(f"\nSaved to {RESULTS.relative_to(ROOT)}", file=sys.stderr)

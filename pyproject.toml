@@ -1,7 +1,7 @@
 [project]
 name = "rag-document-qa"
 version = "1.0.0"
-description = "A small, readable RAG document Q&A prototype: FastAPI + Chroma + OpenAI (or Claude)."
+description = "A small, readable RAG document Q&A prototype: FastAPI + Chroma + OpenAI."
 requires-python = ">=3.10"
 
 [tool.pytest.ini_options]

@@ -1,24 +1,262 @@
 {
   "answerable": [
-    {"question": "How many paid vacation days do full-time employees get per year?", "page": 3, "expect": ["25"]},
-    {"question": "How many unused vacation days can be carried over, and when do they expire?", "page": 3, "expect": ["31 March"]},
-    {"question": "How long is paid parental leave?", "page": 3, "expect": ["16 weeks"]},
-    {"question": "How many days per week can I work from home?", "page": 4, "expect": ["three", "3"]},
-    {"question": "What is the monthly internet allowance for remote employees?", "page": 4, "expect": ["30"]},
-    {"question": "What is the hotel limit per night in London?", "page": 5, "expect": ["250"]},
-    {"question": "When am I allowed to fly business class?", "page": 5, "expect": ["six hours", "6 hours"]},
-    {"question": "Within how many days do I have to submit an expense?", "page": 5, "expect": ["30"]},
-    {"question": "What is the minimum password length?", "page": 6, "expect": ["14"]},
-    {"question": "How quickly must I report a lost or stolen laptop?", "page": 6, "expect": ["1 hour", "one hour"]},
-    {"question": "How long is the probation period?", "page": 2, "expect": ["six months", "6 months"]},
-    {"question": "How big is the home office budget for new employees?", "page": 2, "expect": ["500"]}
+    {
+      "question": "How many paid vacation days do full-time employees get per year?",
+      "kind": "direct",
+      "pages": [
+        3
+      ],
+      "expect": [
+        "25"
+      ]
+    },
+    {
+      "question": "How many unused vacation days can be carried over, and when do they expire?",
+      "kind": "direct",
+      "pages": [
+        3
+      ],
+      "expect": [
+        "31 March"
+      ]
+    },
+    {
+      "question": "How long is paid parental leave?",
+      "kind": "direct",
+      "pages": [
+        3
+      ],
+      "expect": [
+        "16 weeks"
+      ]
+    },
+    {
+      "question": "How many days per week can I work from home?",
+      "kind": "direct",
+      "pages": [
+        4
+      ],
+      "expect": [
+        "three|3"
+      ]
+    },
+    {
+      "question": "What is the monthly internet allowance for remote employees?",
+      "kind": "direct",
+      "pages": [
+        4
+      ],
+      "expect": [
+        "30"
+      ]
+    },
+    {
+      "question": "What is the hotel limit per night in London?",
+      "kind": "direct",
+      "pages": [
+        5
+      ],
+      "expect": [
+        "250"
+      ]
+    },
+    {
+      "question": "When am I allowed to fly business class?",
+      "kind": "direct",
+      "pages": [
+        5
+      ],
+      "expect": [
+        "six hours|6 hours"
+      ]
+    },
+    {
+      "question": "Within how many days do I have to submit an expense?",
+      "kind": "direct",
+      "pages": [
+        5
+      ],
+      "expect": [
+        "30"
+      ]
+    },
+    {
+      "question": "What is the minimum password length?",
+      "kind": "direct",
+      "pages": [
+        6
+      ],
+      "expect": [
+        "14"
+      ]
+    },
+    {
+      "question": "How quickly must I report a lost or stolen laptop?",
+      "kind": "direct",
+      "pages": [
+        6
+      ],
+      "expect": [
+        "1 hour|one hour"
+      ]
+    },
+    {
+      "question": "How long is the probation period?",
+      "kind": "direct",
+      "pages": [
+        2
+      ],
+      "expect": [
+        "six months|6 months"
+      ]
+    },
+    {
+      "question": "How big is the home office budget for new employees?",
+      "kind": "direct",
+      "pages": [
+        2
+      ],
+      "expect": [
+        "500"
+      ]
+    },
+    {
+      "question": "Am I allowed to do my job from a different European country for a while?",
+      "kind": "paraphrase",
+      "pages": [
+        4
+      ],
+      "expect": [
+        "20"
+      ]
+    },
+    {
+      "question": "How much will the company pay for my overnight stay when I travel to Paris?",
+      "kind": "paraphrase",
+      "pages": [
+        5
+      ],
+      "expect": [
+        "250"
+      ]
+    },
+    {
+      "question": "If my work computer is taken from me, who do I tell and how fast?",
+      "kind": "paraphrase",
+      "pages": [
+        6
+      ],
+      "expect": [
+        "1 hour|one hour"
+      ]
+    },
+    {
+      "question": "Do I need a medical certificate if I'm off ill for a while?",
+      "kind": "paraphrase",
+      "pages": [
+        3
+      ],
+      "expect": [
+        "fourth|4th"
+      ]
+    },
+    {
+      "question": "What money do new hires get for equipment, and what do remote employees get every month?",
+      "kind": "multi-section",
+      "pages": [
+        2,
+        4
+      ],
+      "expect": [
+        "500",
+        "30"
+      ]
+    },
+    {
+      "question": "How far ahead must I request vacation, and within how many days must I file a travel expense?",
+      "kind": "multi-section",
+      "pages": [
+        3,
+        5
+      ],
+      "expect": [
+        "two weeks|2 weeks|14",
+        "30 days"
+      ]
+    },
+    {
+      "question": "How much notice is needed for vacation longer than ten working days, and how long does probation last?",
+      "kind": "multi-section",
+      "pages": [
+        3,
+        2
+      ],
+      "expect": [
+        "six weeks|6 weeks",
+        "six months|6 months"
+      ]
+    },
+    {
+      "question": "How much is reimbursed per kilometre when I use my own car for work?",
+      "kind": "exact-value",
+      "pages": [
+        5
+      ],
+      "expect": [
+        "0.23"
+      ]
+    },
+    {
+      "question": "By what date must the annual security training be completed?",
+      "kind": "exact-value",
+      "pages": [
+        6
+      ],
+      "expect": [
+        "30 November"
+      ]
+    }
   ],
   "unanswerable": [
-    {"question": "What is the CEO's salary?"},
-    {"question": "What's the weather in Paris?"},
-    {"question": "What dental insurance plan does Acme offer?"},
-    {"question": "Does Acme provide company cars to employees?"},
-    {"question": "What is Acme Corp's current stock price?"},
-    {"question": "Who won the 2022 FIFA World Cup?"}
+    {
+      "question": "What is the CEO's salary?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "What's the weather in Paris?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "What dental insurance plan does Acme offer?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "Does Acme provide company cars to employees?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "What is Acme Corp's current stock price?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "Who won the 2022 FIFA World Cup?",
+      "kind": "off-topic"
+    },
+    {
+      "question": "How many paid sick days do employees get per year?",
+      "kind": "near-miss"
+    },
+    {
+      "question": "How often do passwords have to be changed?",
+      "kind": "near-miss"
+    },
+    {
+      "question": "How much paid leave do I get when a close relative dies?",
+      "kind": "near-miss"
+    },
+    {
+      "question": "What is the monthly wellness or gym allowance?",
+      "kind": "near-miss"
+    }
   ]
 }

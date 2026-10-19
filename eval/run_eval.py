@@ -31,8 +31,10 @@ RESULTS = Path(__file__).with_name("results.md")
 @dataclass
 class Row:
     question: str
+    kind: str
     answerable: bool
     answered: bool
+    layer: int | None  # which refusal layer stopped it (1 = threshold, 2 = model), None if answered
     page_hit: bool | None
     fact_ok: bool | None
     top_score: float
@@ -65,19 +67,28 @@ def run(service: RagService, doc_id: str, questions: list[dict]) -> list[Row]:
         result = service.ask(doc_id, q["question"])
         latency = round((time.perf_counter() - started) * 1000)
         pages = {s.page for s in result.sources}
+        top_score = max((s.score for s in result.sources), default=0.0)
+        layer = None if result.answered else (1 if top_score < service.settings.min_score else 2)
         rows.append(
             Row(
                 question=q["question"],
+                kind=q["kind"],
                 answerable=q["answerable"],
                 answered=result.answered,
-                page_hit=q["page"] in pages if q["answerable"] else None,
-                fact_ok=any(e.lower() in result.answer.lower() for e in q["expect"]) if q["answerable"] else None,
-                top_score=max((s.score for s in result.sources), default=0.0),
+                layer=layer,
+                page_hit=set(q["pages"]) <= pages if q["answerable"] else None,
+                fact_ok=all(_mentions(result.answer, group) for group in q["expect"]) if q["answerable"] else None,
+                top_score=top_score,
                 latency_ms=latency,
             )
         )
         print(f"  {'✓' if result.answered == q['answerable'] else '✗'} {q['question']}", file=sys.stderr)
     return rows
+
+
+def _mentions(answer: str, group: str) -> bool:
+    """True if the answer contains any of the '|'-separated alternatives in `group`."""
+    return any(option.lower() in answer.lower() for option in group.split("|"))
 
 
 def mark(value: bool | None) -> str:
@@ -96,8 +107,11 @@ def report(rows: list[Row], min_score: float, model: str) -> str:
         "|---|---|---|---|---|---|---|---|",
     ]
     for i, r in enumerate(rows, 1):
-        kind = "answerable" if r.answerable else "unanswerable"
-        answered = mark(r.answered) if r.answerable else ("refused ✅" if not r.answered else "answered ❌")
+        kind = f"{'answerable' if r.answerable else 'unanswerable'} · {r.kind}"
+        if r.answerable:
+            answered = mark(r.answered) if r.answered else f"refused ❌ (layer {r.layer})"
+        else:
+            answered = f"refused ✅ (layer {r.layer})" if not r.answered else "answered ❌"
         lines.append(
             f"| {i} | {r.question} | {kind} | {answered} | {mark(r.page_hit)} | {mark(r.fact_ok)} "
             f"| {r.top_score:.3f} | {r.latency_ms} ms |"
@@ -106,7 +120,7 @@ def report(rows: list[Row], min_score: float, model: str) -> str:
         "",
         "| Metric | Result |",
         "|---|---|",
-        f"| Retrieval hit rate (expected page in sources) | "
+        f"| Retrieval hit rate (all expected pages in sources) | "
         f"{pct(sum(r.page_hit for r in answerable), len(answerable))} |",
         f"| Answerable questions answered | {pct(sum(r.answered for r in answerable), len(answerable))} |",
         f"| Answers containing the expected fact | {pct(sum(r.fact_ok for r in answerable), len(answerable))} |",

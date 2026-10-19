@@ -1,0 +1,24 @@
+{
+  "answerable": [
+    {"question": "How many paid vacation days do full-time employees get per year?", "page": 3, "expect": ["25"]},
+    {"question": "How many unused vacation days can be carried over, and when do they expire?", "page": 3, "expect": ["31 March"]},
+    {"question": "How long is paid parental leave?", "page": 3, "expect": ["16 weeks"]},
+    {"question": "How many days per week can I work from home?", "page": 4, "expect": ["three", "3"]},
+    {"question": "What is the monthly internet allowance for remote employees?", "page": 4, "expect": ["30"]},
+    {"question": "What is the hotel limit per night in London?", "page": 5, "expect": ["250"]},
+    {"question": "When am I allowed to fly business class?", "page": 5, "expect": ["six hours", "6 hours"]},
+    {"question": "Within how many days do I have to submit an expense?", "page": 5, "expect": ["30"]},
+    {"question": "What is the minimum password length?", "page": 6, "expect": ["14"]},
+    {"question": "How quickly must I report a lost or stolen laptop?", "page": 6, "expect": ["1 hour", "one hour"]},
+    {"question": "How long is the probation period?", "page": 2, "expect": ["six months", "6 months"]},
+    {"question": "How big is the home office budget for new employees?", "page": 2, "expect": ["500"]}
+  ],
+  "unanswerable": [
+    {"question": "What is the CEO's salary?"},
+    {"question": "What's the weather in Paris?"},
+    {"question": "What dental insurance plan does Acme offer?"},
+    {"question": "Does Acme provide company cars to employees?"},
+    {"question": "What is Acme Corp's current stock price?"},
+    {"question": "Who won the 2022 FIFA World Cup?"}
+  ]
+}

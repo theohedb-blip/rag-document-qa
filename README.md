@@ -249,6 +249,10 @@ No answerable question was missed in the final run, but the evaluation did expos
 - **Cheap, fast default models** (`gpt-4.1-mini`, or `claude-haiku-5-5` with `LLM_PROVIDER=anthropic`). Grounded short answers don't need a frontier model. All model names are environment variables.
 - **Content-hash document IDs.** Re-uploading a file is idempotent and never re-embeds it.
 
+## Why a threshold instead of a reranker?
+
+A reranker scores each question–passage pair together, which is more accurate than comparing two precomputed embeddings, but it adds another model call, another dependency and another per-request cost to every question. A similarity threshold is one comparison on a number the pipeline already has: it is free and instant, easy to explain, and it lets off-topic questions skip the LLM entirely. For a single-document prototype that is the right trade. It is also a blunt tool (see the known failure cases): it cannot tell "same topic, missing fact" from "answer present", which is why layer 2 exists. A reranker becomes worth adding when documents are long or repetitive, when the right passage starts falling outside the top-k, or when you want to retrieve 20 candidates and keep the best 5.
+
 ## Tests
 
 ```bash

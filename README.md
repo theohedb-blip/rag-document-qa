@@ -253,6 +253,18 @@ No answerable question was missed in the final run, but the evaluation did expos
 
 A reranker scores each question–passage pair together, which is more accurate than comparing two precomputed embeddings, but it adds another model call, another dependency and another per-request cost to every question. A similarity threshold is one comparison on a number the pipeline already has: it is free and instant, easy to explain, and it lets off-topic questions skip the LLM entirely. For a single-document prototype that is the right trade. It is also a blunt tool (see the known failure cases): it cannot tell "same topic, missing fact" from "answer present", which is why layer 2 exists. A reranker becomes worth adding when documents are long or repetitive, when the right passage starts falling outside the top-k, or when you want to retrieve 20 candidates and keep the best 5.
 
+## Cost
+
+With the defaults, a fresh index and a question cost this much (prices checked on 2026-10-19):
+
+| Step | Tokens (measured) | Price | Cost |
+|---|---|---|---|
+| Index the 6-page sample (9 chunks) with `text-embedding-3-small` | 1,153 | $0.02 per 1M tokens ([source](https://developers.openai.com/api/docs/models/text-embedding-3-small)) | about $0.00002 |
+| One answered question with `gpt-4.1-mini` | about 680 in, 40 out | $0.40 in / $1.60 out per 1M tokens ([source](https://developers.openai.com/api/docs/models/gpt-4.1-mini)) | about $0.0003 |
+| One question stopped at layer 1 | 8 (embedding only) | $0.02 per 1M tokens | under $0.000001 |
+
+That is roughly 3,000 answered questions per dollar, and the 31-question evaluation costs about one cent. The cost grows with the number of retrieved chunks sent to the model (`TOP_K`) and with document size only at indexing time. **Heads-up:** OpenAI's [deprecations page](https://developers.openai.com/api/docs/deprecations) lists `gpt-4.1-mini` for shutdown on 14 January 2027. The model name is just the `OPENAI_CHAT_MODEL` environment variable, so switching is a one-line change, but re-run `python eval/run_eval.py` after changing models because refusal behaviour is model-specific.
+
 ## Tests
 
 ```bash

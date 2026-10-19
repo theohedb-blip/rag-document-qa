@@ -1,14 +1,27 @@
 # RAG Document Q&A
 
-[![CI](https://github.com/theohedb-blip/rag-document-qa/actions/workflows/ci.yml/badge.svg)](https://github.com/theohedb-blip/rag-document-qa/actions/workflows/ci.yml)
+[![CI](https://github.com/theohedb-blip/rag-document-qa/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/theohedb-blip/rag-document-qa/actions/workflows/ci.yml)
 
 **Upload a PDF or text file and ask questions about it. Every answer comes from the document, cites its pages, and says "not found" instead of guessing.**
 
 FastAPI · Chroma · OpenAI embeddings · OpenAI or Claude for answers · about 500 lines of plain Python, no LangChain.
 
-| Answer with sources | Question the document can't answer |
-|---|---|
-| ![Answer with sources](docs/screenshot.png) | ![Not found state](docs/screenshot-not-found.png) |
+**In short**
+
+- **What it does:** you upload a document, ask a question in plain English, and get a short answer together with the exact passages and page numbers it came from.
+- **Why you can trust it:** if the document doesn't contain the answer, it says "Not found in the document" instead of guessing. Two separate safeguards make this happen (see [Handling unanswerable questions](#handling-unanswerable-questions)).
+- **What it costs:** indexing a six-page document costs a fraction of a cent, and each question costs roughly 0.03 cents ([details](#cost)).
+
+<table>
+  <tr>
+    <th width="50%">Answer with sources</th>
+    <th width="50%">Not found in document</th>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshot.png" alt="A grounded answer with its source passage, page number and similarity score"></td>
+    <td><img src="docs/screenshot-not-found.png" alt="The amber 'Not found in the document' state"></td>
+  </tr>
+</table>
 
 ## Quickstart
 

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Document Q&amp;A</title>
+  <style>
+    :root {
+      --bg: #f6f7f9; --card: #fff; --text: #1d2330; --muted: #6b7280; --border: #e3e6eb;
+      --accent: #2f6fed; --accent-soft: #eaf1ff; --ok: #16794c; --ok-soft: #e7f6ee;
+      --warn: #a15c07; --warn-soft: #fff5e5; --err: #b42318;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text);
+           font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 40px 16px 64px; }
+    h1 { font-size: 24px; margin: 0 0 4px; }
+    .sub { color: var(--muted); margin: 0 0 28px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+    .label { font-size: 12px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+             color: var(--muted); margin: 0 0 10px; }
+    .drop { display: block; border: 2px dashed var(--border); border-radius: 10px; padding: 22px;
+            text-align: center; cursor: pointer; color: var(--muted); transition: .15s; }
+    .drop:hover, .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+    .drop input { display: none; }
+    .row { display: flex; gap: 10px; margin-top: 12px; }
+    select, input[type=text] { flex: 1; min-width: 0; padding: 10px 12px; border: 1px solid var(--border);
+            border-radius: 8px; font: inherit; background: #fff; }
+    input[type=text]:focus, select:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+    button { padding: 10px 18px; border: 0; border-radius: 8px; background: var(--accent); color: #fff;
+             font: inherit; font-weight: 600; cursor: pointer; }
+    button:disabled { opacity: .55; cursor: default; }
+    .status { font-size: 13px; color: var(--muted); margin-top: 10px; min-height: 1.2em; }
+    .status.error { color: var(--err); }
+    .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 99px; }
+    .badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .badge.warn { background: var(--warn-soft); color: var(--warn); }
+    .answer-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .latency { font-size: 12px; color: var(--muted); }
+    .answer { font-size: 16px; white-space: pre-wrap; }
+    .card.notfound { border-color: #f3d9b1; background: var(--warn-soft); }
+    .card.notfound .answer { color: var(--warn); font-weight: 600; }
+    .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+    details { border-top: 1px solid var(--border); padding: 10px 0 0; margin-top: 12px; }
+    summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+    .source { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 10px; background: #fff; }
+    .source-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    .score { font-variant-numeric: tabular-nums; }
+    .snippet { font-size: 13px; white-space: pre-wrap; margin: 0; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Document Q&amp;A</h1>
+  <p class="sub">Upload a PDF or text file, then ask questions. Answers cite the pages they come from.</p>
+
+  <section class="card">
+    <p class="label">1 · Document</p>
+    <label class="drop" id="drop">
+      <input type="file" id="file" accept=".pdf,.txt">
+      <strong>Choose a file</strong> or drag it here · PDF or TXT
+    </label>
+    <div class="row"><select id="doc"><option value="">No documents yet</option></select></div>
+    <div class="status" id="upload-status"></div>
+  </section>
+
+  <section class="card">
+    <p class="label">2 · Question</p>
+    <form class="row" id="ask-form">
+      <input type="text" id="question" placeholder="e.g. How many vacation days do new employees get?" autocomplete="off">
+      <button id="ask-btn">Ask</button>
+    </form>
+    <div class="status" id="ask-status"></div>
+  </section>
+
+  <section class="card hidden" id="result">
+    <div class="answer-head"><span id="badge" class="badge"></span><span class="latency" id="latency"></span></div>
+    <div class="answer" id="answer"></div>
+    <p class="hint hidden" id="hint">The document doesn't seem to cover this. Try rephrasing, or ask about something it contains.</p>
+    <details id="sources"><summary id="sources-title"></summary><div id="sources-list"></div></details>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+function setStatus(id, text, isError = false) {
+  $(id).textContent = text;
+  $(id).classList.toggle("error", isError);
+}
+
+async function api(path, options) {
+  const res = await fetch(path, options);
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const detail = Array.isArray(body.detail) ? body.detail.map((d) => d.msg).join("; ") : body.detail;
+    throw new Error(detail || `Request failed (${res.status})`);
+  }
+  return body;
+}
+
+async function loadDocuments(selectId) {
+  const docs = await api("/documents");
+  const select = $("doc");
+  select.innerHTML = docs.length ? "" : '<option value="">No documents yet</option>';
+  for (const d of docs) {
+    select.add(new Option(`${d.filename} · ${d.pages} pages · ${d.chunks} chunks`, d.doc_id));
+  }
+  if (selectId) select.value = selectId;
+}
+
+async function upload(file) {
+  setStatus("upload-status", `Indexing ${file.name}…`);
+  const form = new FormData();
+  form.append("file", file);
+  try {
+    const doc = await api("/documents", { method: "POST", body: form });
+    await loadDocuments(doc.doc_id);
+    setStatus("upload-status", `Indexed ${doc.filename}: ${doc.pages} pages, ${doc.chunks} chunks.`);
+  } catch (err) {
+    setStatus("upload-status", err.message, true);
+  }
+}
+
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function render(result) {
+  $("result").classList.remove("hidden");
+  $("result").classList.toggle("notfound", !result.answered);
+  $("badge").className = `badge ${result.answered ? "ok" : "warn"}`;
+  $("badge").textContent = result.answered ? "Answer" : "No answer";
+  $("answer").textContent = result.answer;
+  $("hint").classList.toggle("hidden", result.answered);
+  $("latency").textContent = `${result.latency_ms} ms`;
+
+  const n = result.sources.length;
+  $("sources").classList.toggle("hidden", n === 0);
+  $("sources").open = false;
+  $("sources-title").textContent = result.answered ? `Sources (${n})` : `Closest passages (${n})`;
+  const list = $("sources-list");
+  list.replaceChildren();
+  for (const s of result.sources) {
+    const box = el("div", "source");
+    const meta = el("div", "source-meta");
+    meta.append(el("span", "", `Page ${s.page}`), el("span", "score", `similarity ${s.score.toFixed(3)}`));
+    box.append(meta, el("p", "snippet", s.snippet));
+    list.append(box);
+  }
+}
+
+$("file").addEventListener("change", (e) => e.target.files[0] && upload(e.target.files[0]));
+const drop = $("drop");
+drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  drop.classList.remove("over");
+  if (e.dataTransfer.files[0]) upload(e.dataTransfer.files[0]);
+});
+
+$("ask-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const question = $("question").value.trim();
+  if (!$("doc").value) return setStatus("ask-status", "Upload or select a document first.", true);
+  if (!question) return setStatus("ask-status", "Type a question first.", true);
+  $("ask-btn").disabled = true;
+  setStatus("ask-status", "Searching the document…");
+  try {
+    render(await api("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ doc_id: $("doc").value, question }),
+    }));
+    setStatus("ask-status", "");
+  } catch (err) {
+    setStatus("ask-status", err.message, true);
+  } finally {
+    $("ask-btn").disabled = false;
+  }
+});
+
+loadDocuments().catch((err) => setStatus("upload-status", err.message, true));
+</script>
+</body>
+</html>

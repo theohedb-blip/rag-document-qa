@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     chunk_size: int = 800
     chunk_overlap: int = 150
     top_k: int = 4
-    min_score: float = 0.30  # cosine similarity; tuned with eval/run_eval.py --sweep
+    min_score: float = 0.35  # cosine similarity; tuned with eval/run_eval.py --sweep
 
     max_upload_mb: int = 20
 

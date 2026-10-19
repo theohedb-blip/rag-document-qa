@@ -19,7 +19,7 @@ from playwright.sync_api import Page, sync_playwright
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ROOT / "docs"
 SAMPLE = ROOT / "sample" / "acme_handbook.pdf"
-ANSWERABLE = "How many vacation days do I get, and can I carry unused days over?"
+ANSWERABLE = "What do new hires and remote employees get in money?"
 UNANSWERABLE = "What is the CEO's salary?"
 
 
@@ -43,24 +43,33 @@ def server(port: int = 8765):
             proc.wait()
 
 
-MAX_HEIGHT = 900
+MAX_HEIGHT = 1000
 
 
-def ask(page: Page, question: str, expect_class: str, output: Path, show_sources: bool) -> None:
+def ask(page: Page, question: str, expect_class: str) -> None:
     page.fill("#question", question)
     with page.expect_response("**/ask", timeout=60_000):
         page.click("#ask-btn")
     page.wait_for_selector(f"#result{expect_class}:not(.hidden)")
-    if show_sources:
-        page.click("#sources-title")
-    # Crop to the question card + result card, at most MAX_HEIGHT tall.
+    page.click("#sources-title")
+
+
+def card_height(page: Page) -> float:
+    """Height of the question card plus the result card."""
     top = page.locator("section").nth(1).bounding_box()
     result = page.locator("#result").bounding_box()
-    height = min(result["y"] + result["height"] - top["y"] + 16, MAX_HEIGHT)
+    return result["y"] + result["height"] - top["y"]
+
+
+def shoot(page: Page, output: Path, height: float) -> None:
+    """Crop to the question + result cards, padded or cut to exactly `height` CSS px."""
+    top = page.locator("section").nth(1).bounding_box()
+    # Make sure the page is tall enough that the clip never runs past the document.
+    page.evaluate("document.body.style.minHeight = '3000px'")
     page.screenshot(
         path=str(output),
         full_page=True,
-        clip={"x": top["x"] - 10, "y": top["y"] - 8, "width": top["width"] + 20, "height": height + 8},
+        clip={"x": top["x"] - 10, "y": top["y"] - 8, "width": top["width"] + 20, "height": height},
     )
     print(f"Wrote {output.relative_to(ROOT)} ({round(height)}px tall)")
 
@@ -72,11 +81,17 @@ def capture(url: str) -> None:
     with sync_playwright() as p:
         # CHROMIUM_PATH lets you reuse a system Chromium instead of running `playwright install`.
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH"))
-        page = browser.new_page(viewport={"width": 1280, "height": 800}, device_scale_factor=1.5)
-        page.goto(url)
-        page.wait_for_selector("#doc option[value]:not([value=''])", state="attached")
-        ask(page, ANSWERABLE, ":not(.notfound)", DOCS / "screenshot.png", show_sources=True)
-        ask(page, UNANSWERABLE, ".notfound", DOCS / "screenshot-not-found.png", show_sources=False)
+        pages = []
+        for question, expect_class in ((ANSWERABLE, ":not(.notfound)"), (UNANSWERABLE, ".notfound")):
+            page = browser.new_page(viewport={"width": 1280, "height": 800}, device_scale_factor=1.5)
+            page.goto(url)
+            page.wait_for_selector("#doc option[value]:not([value=''])", state="attached")
+            ask(page, question, expect_class)
+            pages.append(page)
+        # Both images get the height of the taller one so they line up side by side.
+        height = min(max(card_height(page) for page in pages) + 16, MAX_HEIGHT)
+        shoot(pages[0], DOCS / "screenshot.png", height)
+        shoot(pages[1], DOCS / "screenshot-not-found.png", height)
         browser.close()
 
 

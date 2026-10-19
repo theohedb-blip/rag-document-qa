@@ -43,14 +43,26 @@ def server(port: int = 8765):
             proc.wait()
 
 
-def ask(page: Page, question: str, expect_class: str, output: Path) -> None:
+MAX_HEIGHT = 900
+
+
+def ask(page: Page, question: str, expect_class: str, output: Path, show_sources: bool) -> None:
     page.fill("#question", question)
     with page.expect_response("**/ask", timeout=60_000):
         page.click("#ask-btn")
     page.wait_for_selector(f"#result{expect_class}:not(.hidden)")
-    page.click("#sources-title")
-    page.locator("main").screenshot(path=str(output))
-    print(f"Wrote {output.relative_to(ROOT)}")
+    if show_sources:
+        page.click("#sources-title")
+    # Crop to the question card + result card, at most MAX_HEIGHT tall.
+    top = page.locator("section").nth(1).bounding_box()
+    result = page.locator("#result").bounding_box()
+    height = min(result["y"] + result["height"] - top["y"] + 16, MAX_HEIGHT)
+    page.screenshot(
+        path=str(output),
+        full_page=True,
+        clip={"x": top["x"] - 10, "y": top["y"] - 8, "width": top["width"] + 20, "height": height + 8},
+    )
+    print(f"Wrote {output.relative_to(ROOT)} ({round(height)}px tall)")
 
 
 def capture(url: str) -> None:
@@ -60,11 +72,11 @@ def capture(url: str) -> None:
     with sync_playwright() as p:
         # CHROMIUM_PATH lets you reuse a system Chromium instead of running `playwright install`.
         browser = p.chromium.launch(executable_path=os.environ.get("CHROMIUM_PATH"))
-        page = browser.new_page(viewport={"width": 900, "height": 1200}, device_scale_factor=2)
+        page = browser.new_page(viewport={"width": 1280, "height": 800}, device_scale_factor=1.5)
         page.goto(url)
         page.wait_for_selector("#doc option[value]:not([value=''])", state="attached")
-        ask(page, ANSWERABLE, ":not(.notfound)", DOCS / "screenshot.png")
-        ask(page, UNANSWERABLE, ".notfound", DOCS / "screenshot-not-found.png")
+        ask(page, ANSWERABLE, ":not(.notfound)", DOCS / "screenshot.png", show_sources=True)
+        ask(page, UNANSWERABLE, ".notfound", DOCS / "screenshot-not-found.png", show_sources=False)
         browser.close()
 
 

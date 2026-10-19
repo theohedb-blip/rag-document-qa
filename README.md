@@ -185,7 +185,7 @@ python eval/run_eval.py            # full run: prints the table below and saves 
 python eval/run_eval.py --sweep    # embeddings only: how each MIN_SCORE would split the questions
 ```
 
-**This is a small, single-document test set meant to show the method, not a benchmark, and the threshold must be re-tuned for each corpus.** `MIN_SCORE` was chosen on the first 18 questions; the 13 harder ones were added afterwards and were not used for tuning. Because the LLM samples its answers, results can differ slightly between runs (see the first known failure case below).
+**The threshold must be re-tuned for each corpus.** `MIN_SCORE` was chosen on the first 18 questions; the 13 harder ones were added afterwards and were not used for tuning. Because the LLM samples its answers, results can differ slightly between runs (see the first known failure case below).
 
 Model: `gpt-4.1-mini` · MIN_SCORE = 0.35 · top_k = 4
 
@@ -230,6 +230,8 @@ Model: `gpt-4.1-mini` · MIN_SCORE = 0.35 · top_k = 4
 | Answers containing the expected fact | 100% (21/21) |
 | Unanswerable questions correctly refused | 100% (10/10) |
 | Median latency | 1055 ms |
+
+This is a small, single-document test set meant to demonstrate the method, not a benchmark; on real documents expect some misses, which is where reranking or hybrid search come in.
 
 Layer 1 (the similarity threshold) stopped the CEO-salary, weather and World Cup questions (top score ≤ 0.27, about 270–420 ms, no LLM call). The other seven unanswerable questions, including all four near-misses, scored 0.36–0.62, so they reached the model and were refused at layer 2 when it returned `NOT_IN_DOCUMENT`. Latency is measured end to end from a cloud sandbox and includes the OpenAI round-trips.
 
